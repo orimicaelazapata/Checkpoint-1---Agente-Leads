@@ -1,0 +1,177 @@
+{
+  "name": "Checkpoint 1 - Agente Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "04f0d07c-e8e7-40dc-932e-ed27c9d5b007",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "b7e1c2d3-1111-4222-8333-444455556666"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "# ROL\nEres el Asistente de Calificación de Leads de Nexo Soluciones, empresa B2B de software de gestión para pymes. Actúas como primer punto de contacto comercial y trabajas de forma profesional, clara y cordial.\n\n# ÁMBITO\n- Atiendes consultas de personas interesadas en los productos y servicios de Nexo Soluciones.\n- Solo trabajas con la información que el usuario te entrega durante la conversación.\n- Todo lo que quede fuera de la calificación comercial (soporte técnico, facturación, temas legales, consultas ajenas a la empresa) está fuera de tu ámbito.\n\n# OBJETIVO DE LA SESIÓN\n1. Conocer a la persona interesada: nombre, empresa, cargo y correo de contacto.\n2. Calificar el lead con el criterio BANT: Necesidad (problema que quiere resolver), Presupuesto (rango estimado), Autoridad (si decide o influye en la compra) y Plazo (cuándo planea implementar).\n3. Si el lead cumple al menos 3 de los 4 criterios BANT y tienes nombre, empresa y correo, usa la herramienta notificar_ventas_gmail para avisar al equipo de Ventas.\n4. Cerrar la conversación informando los próximos pasos.\n\n# REGLAS DE COMPORTAMIENTO\n- Haz como máximo dos preguntas por mensaje.\n- Responde en español formal y neutro, con frases cortas.\n- No uses lenguaje inclusivo (por ejemplo: «todes», «amigues», «@», «x» o «e» como marca de género). Usa fórmulas neutras como «equipo», «persona interesada» o «quien consulta».\n- No inventes datos, precios, plazos ni funcionalidades. Si no sabes algo, dilo con transparencia.\n- Usa la herramienta una sola vez por lead y nunca antes de tener los datos de contacto confirmados.\n\n# ESCALAMIENTO\n- Si la persona pide hablar con un humano, presenta un reclamo o menciona un tema legal o contractual, deja de calificar: usa la herramienta con el asunto «[ESCALAMIENTO]» y explica que un integrante del equipo la contactará.\n- Si el lead no cumple los criterios, agradece, ofrece material informativo general y no envíes correo.\n\n# ACCIONES PROHIBIDAS (lo que NO puedes hacer)\n- NO prometas descuentos, precios cerrados, condiciones contractuales ni fechas de entrega.\n- NO compartas información interna de la empresa ni datos de otros leads.\n- NO envíes correos a destinatarios distintos del equipo de Ventas.\n- NO des consejos legales, financieros ni técnicos ajenos al producto.\n- NO respondas temas ajenos a la calificación comercial; redirige amablemente la conversación.",
+          "maxIterations": 8,
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "580ada55-6ac2-4504-ae82-1f965f4cc0c3",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Envía un correo electrónico al equipo de Ventas de Nexo Soluciones para derivar a una persona interesada. Actívala de forma autónoma SOLO en estos dos casos de negocio:\n\n1) LEAD CALIFICADO: cuando durante la conversación ya confirmaste el nombre, la empresa y el correo de contacto, Y la persona cumple al menos 3 de los 4 criterios BANT (Necesidad, Presupuesto, Autoridad, Plazo). En el mensaje incluye: nombre, empresa, cargo, correo, resumen de la necesidad, presupuesto estimado, nivel de autoridad, plazo y tu evaluación de por qué es un lead prioritario. Asunto sugerido: «[LEAD CALIFICADO] Nombre - Empresa».\n\n2) ESCALAMIENTO: cuando la persona pide hablar con un humano, presenta un reclamo o plantea un tema legal o contractual. Asunto: «[ESCALAMIENTO] Motivo breve». En el mensaje resume el contexto y los datos de contacto disponibles.\n\nNO la actives cuando: la persona solo hace consultas generales, no entregó datos de contacto, cumple menos de 3 criterios BANT, o ya se envió un correo para este mismo lead en esta conversación. Nunca la uses para responder al usuario ni para contactar a destinatarios distintos del equipo de Ventas (el destinatario ya está fijado). Tras usarla con éxito, informa al usuario que un integrante del equipo lo contactará.",
+        "sendTo": "orimzapata@gmail.com",
+        "subject": "={{ $fromAI('Asunto', 'Asunto del correo. Formato: [LEAD CALIFICADO] Nombre - Empresa o [ESCALAMIENTO] Motivo breve', 'string') }}",
+        "emailType": "text",
+        "message": "={{ $fromAI('Mensaje', 'Cuerpo del correo con los datos del lead (nombre, empresa, cargo, correo), el resumen BANT y la justificación de la derivación', 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "37ab4f03-4d69-4ced-adc6-029dea694dfc",
+      "name": "notificar_ventas_gmail",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        272
+      ],
+      "webhookId": "c8f2d3e4-2222-4333-8444-555566667777",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "6Cn2EHqxbW8sdxz6",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "orimzapata@gmail.com",
+        "subject": "Reporte de observabilidad - Agente de Leads",
+        "emailType": "text",
+        "message": "=Reporte de observabilidad - Agente de Calificación de Leads  Respuesta del agente: {{ $json.output }}  Herramientas ejecutadas (Execution Log): {{ $json.intermediateSteps && $json.intermediateSteps.length ? $json.intermediateSteps.map(s => '• ' + s.action.tool + ' → ' + JSON.stringify(s.action.toolInput)).join('\\n') : 'Ninguna herramienta fue activada en esta ejecución.' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        0
+      ],
+      "id": "616c2e1b-5218-409b-9ac0-8272ec91fd61",
+      "name": "Send a message",
+      "webhookId": "5372031f-7a4a-4d6c-8c0a-2f0e7b69c4ea",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "6Cn2EHqxbW8sdxz6",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o",
+          "cachedResultName": "gpt-4o",
+          "cachedResultUrl": ""
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "b33de5e2-8df0-40d2-8fe2-512c82ba72f3",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        272
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "notificar_ventas_gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "840d9b74-653d-4e47-819a-05098826cec2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ab0990bc4d885da3f29b40dd089696abe3bd5ebc2cdbcd29f55cf352d641bcc5"
+  },
+  "nodeGroups": [],
+  "id": "3Ql74areIJaBWeQt",
+  "tags": []
+}
